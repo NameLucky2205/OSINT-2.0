@@ -157,6 +157,21 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             const data = await response.json();
+
+            // Check if response was successful
+            if (!response.ok) {
+                // Handle validation errors from FastAPI
+                if (data.detail) {
+                    const errorMsg = Array.isArray(data.detail)
+                        ? data.detail.map(e => e.msg).join(', ')
+                        : data.detail;
+                    showError('Validation error: ' + errorMsg);
+                } else {
+                    showError('Request failed with status: ' + response.status);
+                }
+                return;
+            }
+
             lastResult = data;
             updateStats('email');
             displayEmailResults(data);
@@ -189,6 +204,20 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             const data = await response.json();
+
+            // Check if response was successful
+            if (!response.ok) {
+                if (data.detail) {
+                    const errorMsg = Array.isArray(data.detail)
+                        ? data.detail.map(e => e.msg).join(', ')
+                        : data.detail;
+                    showError('Validation error: ' + errorMsg);
+                } else {
+                    showError('Request failed with status: ' + response.status);
+                }
+                return;
+            }
+
             lastResult = data;
             updateStats('username');
             displayUsernameResults(data);
@@ -216,6 +245,20 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             const data = await response.json();
+
+            // Check if response was successful
+            if (!response.ok) {
+                if (data.detail) {
+                    const errorMsg = Array.isArray(data.detail)
+                        ? data.detail.map(e => e.msg).join(', ')
+                        : data.detail;
+                    showError('Validation error: ' + errorMsg);
+                } else {
+                    showError('Request failed with status: ' + response.status);
+                }
+                return;
+            }
+
             lastResult = data;
             updateStats('photo');
             displayPhotoResults(data);
