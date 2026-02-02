@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSINT Analytics Panel - PeopleFinder</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .code-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .gradient-bg {
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e293b 100%);
+        }
+
+        .card-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        .tab-active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .loader {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result-item {
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .badge-warning {
+            background-color: #f59e0b;
+            color: white;
+        }
+
+        .badge-danger {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .badge-info {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .terminal {
+            background-color: #1e293b;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            color: #94a3b8;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .terminal::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .terminal::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        .terminal::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+
+        .json-key {
+            color: #a78bfa;
+        }
+
+        .json-string {
+            color: #34d399;
+        }
+
+        .json-number {
+            color: #60a5fa;
+        }
+
+        .json-boolean {
+            color: #f59e0b;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="gradient-bg shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <svg class="w-10 h-10 text-purple-300" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
+                    </svg>
+                    <div>
+                        <h1 class="text-xl font-bold text-white">PeopleFinder OSINT</h1>
+                        <p class="text-xs text-purple-200">Analytics Panel v2.0</p>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span id="apiStatus" class="flex items-center text-sm text-white">
+                        <span class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
+                        API Online
+                    </span>
+                    <a href="/docs" target="_blank" class="text-purple-200 hover:text-white text-sm transition">
+                        API Docs
+                    </a>
+                    <a href="/" class="text-purple-200 hover:text-white text-sm transition">
+                        Simple UI
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Total Searches</p>
+                        <p id="totalSearches" class="text-3xl font-bold text-gray-900 mt-1">0</p>
+                    </div>
+                    <div class="bg-purple-100 rounded-full p-3">
+                        <svg class="w-8 h-8 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"/>
+                            <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm9.707 5.707a1 1 0 00-1.414-1.414L9 12.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Email Checks</p>
+                        <p id="emailChecks" class="text-3xl font-bold text-blue-600 mt-1">0</p>
+                    </div>
+                    <div class="bg-blue-100 rounded-full p-3">
+                        <svg class="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/>
+                            <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Username Scans</p>
+                        <p id="usernameScans" class="text-3xl font-bold text-green-600 mt-1">0</p>
+                    </div>
+                    <div class="bg-green-100 rounded-full p-3">
+                        <svg class="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6 card-hover">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-medium">Photo Searches</p>
+                        <p id="photoSearches" class="text-3xl font-bold text-pink-600 mt-1">0</p>
+                    </div>
+                    <div class="bg-pink-100 rounded-full p-3">
+                        <svg class="w-8 h-8 text-pink-600" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Panel - Search Tools -->
+            <div class="lg:col-span-1">
+                <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+                    <div class="card-gradient p-4">
+                        <h2 class="text-xl font-bold text-white">OSINT Tools</h2>
+                        <p class="text-purple-100 text-sm mt-1">Select investigation type</p>
+                    </div>
+
+                    <!-- Tabs -->
+                    <div class="flex border-b">
+                        <button id="tabEmail" class="tab-btn flex-1 py-3 px-4 text-sm font-medium border-b-2 border-transparent hover:border-purple-500 transition tab-active">
+                            Email
+                        </button>
+                        <button id="tabUsername" class="tab-btn flex-1 py-3 px-4 text-sm font-medium border-b-2 border-transparent hover:border-purple-500 transition">
+                            Username
+                        </button>
+                        <button id="tabPhoto" class="tab-btn flex-1 py-3 px-4 text-sm font-medium border-b-2 border-transparent hover:border-purple-500 transition">
+                            Photo
+                        </button>
+                    </div>
+
+                    <!-- Email Panel -->
+                    <div id="panelEmail" class="tab-content p-6">
+                        <h3 class="font-semibold text-gray-800 mb-4">Email OSINT</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
+                                <input type="email" id="emailInput" placeholder="example@gmail.com"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="checkBreaches" checked class="mr-2 rounded text-purple-600">
+                                    <span class="text-sm text-gray-700">Check data breaches (HIBP)</span>
+                                </label>
+                                <label class="flex items-center">
+                                    <input type="checkbox" id="checkRegistrations" checked class="mr-2 rounded text-purple-600">
+                                    <span class="text-sm text-gray-700">Check registrations (Holehe)</span>
+                                </label>
+                            </div>
+                            <button id="emailSearchBtn" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition">
+                                🔍 Investigate Email
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Username Panel -->
+                    <div id="panelUsername" class="tab-content p-6 hidden">
+                        <h3 class="font-semibold text-gray-800 mb-4">Username OSINT</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                                <input type="text" id="usernameInput" placeholder="johndoe"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Max Sites</label>
+                                <input type="number" id="maxSites" value="20" min="1" max="50"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                <p class="text-xs text-gray-500 mt-1">Search across 1-50 platforms</p>
+                            </div>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="extractMetadata" checked class="mr-2 rounded text-purple-600">
+                                <span class="text-sm text-gray-700">Extract profile metadata</span>
+                            </label>
+                            <button id="usernameSearchBtn" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition">
+                                🔍 Search Username
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Photo Panel -->
+                    <div id="panelPhoto" class="tab-content p-6 hidden">
+                        <h3 class="font-semibold text-gray-800 mb-4">Photo OSINT</h3>
+                        <div class="space-y-4">
+                            <div id="photoDropzone" class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:border-purple-500 transition">
+                                <svg class="mx-auto h-12 w-12 text-gray-400 mb-3" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <p class="text-sm text-gray-600">Drop image or click to upload</p>
+                                <p class="text-xs text-gray-400 mt-1">JPG, PNG, GIF (max 10MB)</p>
+                                <input type="file" id="photoInput" accept="image/*" class="hidden">
+                            </div>
+                            <div id="photoPreview" class="hidden">
+                                <img id="photoPreviewImg" src="" alt="Preview" class="w-full rounded-lg">
+                                <button id="removePhoto" class="mt-2 text-sm text-red-500 hover:text-red-700">Remove</button>
+                            </div>
+                            <button id="photoSearchBtn" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium py-2 px-4 rounded-lg transition">
+                                🔍 Reverse Image Search
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white rounded-lg shadow-lg p-6 mt-6">
+                    <h3 class="font-semibold text-gray-800 mb-4">Quick Actions</h3>
+                    <div class="space-y-2">
+                        <button id="clearResults" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition">
+                            🗑️ Clear Results
+                        </button>
+                        <button id="exportJSON" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition">
+                            📥 Export to JSON
+                        </button>
+                        <button id="viewDocs" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-lg transition">
+                            📚 View API Docs
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel - Results -->
+            <div class="lg:col-span-2">
+                <!-- Loading State -->
+                <div id="loadingState" class="hidden bg-white rounded-lg shadow-lg p-12 text-center">
+                    <div class="loader mx-auto"></div>
+                    <p class="mt-4 text-gray-600 font-medium">Processing request...</p>
+                    <p class="text-sm text-gray-500 mt-2" id="loadingMessage">Initializing search</p>
+                </div>
+
+                <!-- Results Container -->
+                <div id="resultsContainer" class="bg-white rounded-lg shadow-lg overflow-hidden hidden">
+                    <div class="card-gradient p-4">
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h2 class="text-xl font-bold text-white">Search Results</h2>
+                                <p id="resultsSubtitle" class="text-purple-100 text-sm mt-1"></p>
+                            </div>
+                            <span id="processingTime" class="text-purple-100 text-sm"></span>
+                        </div>
+                    </div>
+
+                    <!-- Summary Stats -->
+                    <div id="summaryStats" class="bg-gray-50 p-4 border-b"></div>
+
+                    <!-- Results Tabs -->
+                    <div id="resultsContent" class="p-6">
+                        <!-- Dynamic content will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="bg-white rounded-lg shadow-lg p-12 text-center">
+                    <svg class="mx-auto h-24 w-24 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">No results yet</h3>
+                    <p class="text-gray-600">Select an OSINT tool and start your investigation</p>
+                </div>
+
+                <!-- JSON Viewer -->
+                <div id="jsonViewer" class="bg-white rounded-lg shadow-lg overflow-hidden mt-6 hidden">
+                    <div class="bg-gray-800 p-4 flex justify-between items-center">
+                        <h3 class="text-white font-semibold code-font">Raw JSON Response</h3>
+                        <button id="copyJSON" class="text-purple-300 hover:text-white text-sm transition">
+                            📋 Copy
+                        </button>
+                    </div>
+                    <div class="terminal" id="jsonContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/osint-panel.js"></script>
+</body>
+</html>

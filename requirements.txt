@@ -1,0 +1,56 @@
+# FastAPI и ASGI сервер
+fastapi>=0.109.0
+uvicorn>=0.27.0
+python-multipart>=0.0.6
+
+# Обработка изображений
+Pillow>=10.2.0
+# face-recognition>=1.3.0  # Опционально - требует dlib
+# opencv-python>=4.9.0.80  # Опционально
+numpy>=1.26.0
+
+# HTTP запросы и парсинг
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+lxml>=5.1.0
+httpx>=0.26.0
+aiohttp>=3.9.0
+
+# Selenium для сложного скрапинга
+selenium>=4.17.0
+webdriver-manager>=4.0.0
+playwright>=1.41.0
+
+# Утилиты
+python-dotenv>=1.0.0
+pydantic>=2.5.0
+aiofiles>=23.2.0
+
+# ============================================
+# OSINT ИНСТРУМЕНТЫ (Реальные библиотеки)
+# ============================================
+
+# 1. Email проверка и регистрации
+holehe>=1.61  # Проверка регистраций email на 100+ сайтах
+
+# 2. Username поиск (улучшенная версия Sherlock)
+maigret>=0.5.0  # Глубокий поиск по username с извлечением данных
+socid-extractor>=0.0.24  # Извлечение ID и данных из соц. сетей
+
+# 3. Поиск по фото и face recognition
+# dlib>=19.24.0  # Опционально - тяжёлая библиотека
+# face-recognition>=1.3.0  # Опционально
+
+# 4. Дополнительные OSINT утилиты
+phonenumbers>=8.13.0  # Парсинг и валидация телефонов
+python-whois>=0.8.0  # WHOIS поиск доменов
+dnspython>=2.4.0  # DNS запросы
+
+# 5. Scraping и обход блокировок
+fake-useragent>=1.4.0  # Генерация User-Agent
+curl-cffi>=0.5.0  # Обход Cloudflare
+cloudscraper>=1.2.0  # Bypass Cloudflare/anti-bot
+
+# 6. Async и performance
+asyncio-throttle>=1.0.0  # Rate limiting
+tenacity>=8.2.0  # Retry механизм

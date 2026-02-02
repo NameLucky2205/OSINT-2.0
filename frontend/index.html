@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PeopleFinder - Поиск людей</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .logo {
+            font-size: 4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .search-box {
+            box-shadow: 0 2px 5px 1px rgba(64,60,67,.16);
+            transition: box-shadow 0.2s;
+        }
+
+        .search-box:hover {
+            box-shadow: 0 2px 8px 1px rgba(64,60,67,.24);
+        }
+
+        .search-box:focus-within {
+            box-shadow: 0 2px 8px 1px rgba(64,60,67,.28);
+        }
+
+        .toggle-btn {
+            transition: all 0.3s ease;
+        }
+
+        .toggle-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .dropzone {
+            border: 2px dashed #cbd5e0;
+            transition: all 0.3s ease;
+        }
+
+        .dropzone.dragover {
+            border-color: #667eea;
+            background-color: #f7fafc;
+        }
+
+        .result-card {
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .loader {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .confidence-bar {
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(90deg, #48bb78 0%, #ecc94b 50%, #f56565 100%);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="bg-white border-b border-gray-200 py-3 px-6">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <svg class="w-8 h-8 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"/>
+                </svg>
+                <span class="text-xl font-semibold text-gray-800">PeopleFinder</span>
+            </div>
+            <div class="flex space-x-4">
+                <a href="#about" class="text-gray-600 hover:text-gray-900 text-sm">О проекте</a>
+                <a href="https://github.com" target="_blank" class="text-gray-600 hover:text-gray-900 text-sm">GitHub</a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex items-center justify-center px-4 py-12">
+        <div class="max-w-3xl w-full">
+            <!-- Logo -->
+            <div class="text-center mb-8">
+                <h1 class="logo mb-2">PeopleFinder</h1>
+                <p class="text-gray-600 text-lg">Поиск людей по фотографии или данным</p>
+            </div>
+
+            <!-- Toggle Switch -->
+            <div class="flex justify-center mb-6">
+                <div class="inline-flex rounded-lg bg-gray-200 p-1">
+                    <button id="photoBtn" class="toggle-btn active px-6 py-2 rounded-lg font-medium">
+                        Поиск по фото
+                    </button>
+                    <button id="dataBtn" class="toggle-btn px-6 py-2 rounded-lg font-medium text-gray-700">
+                        Поиск по данным
+                    </button>
+                </div>
+            </div>
+
+            <!-- Search Container -->
+            <div class="search-container">
+                <!-- Photo Search -->
+                <div id="photoSearch" class="search-mode">
+                    <div id="dropzone" class="dropzone bg-white rounded-2xl p-12 text-center cursor-pointer">
+                        <svg class="mx-auto h-16 w-16 text-gray-400 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <p class="text-xl text-gray-700 mb-2">Перетащите изображение сюда</p>
+                        <p class="text-sm text-gray-500">или нажмите для выбора файла</p>
+                        <p class="text-xs text-gray-400 mt-2">JPG, PNG, GIF, WEBP (макс. 10MB)</p>
+                        <input type="file" id="imageInput" class="hidden" accept="image/*">
+                    </div>
+                    <div id="imagePreview" class="hidden mt-4 bg-white rounded-2xl p-4">
+                        <img id="previewImg" src="" alt="Preview" class="max-h-64 mx-auto rounded-lg">
+                        <button id="removeImage" class="mt-3 text-red-500 hover:text-red-700 text-sm">Удалить</button>
+                    </div>
+                    <button id="photoSearchBtn" class="w-full mt-6 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium py-3 px-6 rounded-lg transition duration-200">
+                        Найти по фото
+                    </button>
+                </div>
+
+                <!-- Data Search -->
+                <div id="dataSearch" class="search-mode hidden">
+                    <div class="bg-white rounded-2xl search-box overflow-hidden">
+                        <div class="flex items-center px-6 py-4">
+                            <svg class="h-6 w-6 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                            <input
+                                type="text"
+                                id="dataInput"
+                                placeholder="Введите username или email..."
+                                class="flex-1 outline-none text-lg text-gray-800"
+                            >
+                        </div>
+                    </div>
+                    <div class="flex gap-3 mt-4">
+                        <button id="usernameBtn" class="flex-1 py-2 px-4 bg-purple-100 text-purple-700 rounded-lg font-medium hover:bg-purple-200 transition">
+                            Username
+                        </button>
+                        <button id="emailBtn" class="flex-1 py-2 px-4 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition">
+                            Email
+                        </button>
+                    </div>
+                    <button id="dataSearchBtn" class="w-full mt-6 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-medium py-3 px-6 rounded-lg transition duration-200">
+                        Найти
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading Indicator -->
+            <div id="loading" class="hidden mt-8 flex flex-col items-center">
+                <div class="loader"></div>
+                <p class="mt-4 text-gray-600">Поиск в процессе...</p>
+            </div>
+
+            <!-- Results -->
+            <div id="results" class="hidden mt-8">
+                <div class="bg-white rounded-2xl p-6 shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800">Результаты поиска</h2>
+                    <p id="resultsCount" class="text-gray-600 mb-6"></p>
+                    <div id="resultsContainer" class="space-y-4"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 py-6 text-center text-gray-600 text-sm">
+        <p>PeopleFinder &copy; 2024 | Используется для легальных OSINT исследований</p>
+        <p class="mt-1 text-xs text-gray-500">Всегда соблюдайте законы и уважайте приватность людей</p>
+    </footer>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
