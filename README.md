@@ -29,10 +29,13 @@
 ### 1. Клонирование и установка
 
 ```bash
-cd /Users/deus/dev/SP/SP
+# Клонировать репозиторий
+git clone https://github.com/NameLucky2205/OSINT-2.0.git
+cd OSINT-2.0
 
-# Активация venv (если создан)
-source backend/venv/bin/activate
+# Создать виртуальное окружение
+python3 -m venv venv
+source venv/bin/activate
 
 # Установка зависимостей
 pip install -r requirements.txt
@@ -52,39 +55,45 @@ nano .env
 
 ```bash
 cd backend
-python main_osint.py
+uvicorn main_osint:app --host 0.0.0.0 --port 8001
 ```
 
-Сервер запустится на `http://localhost:8000`
+Сервер запустится на `http://localhost:8001`
 
-### 4. Открыть документацию
+### 4. Открыть интерфейс и документацию
 
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
-- API Info: http://localhost:8000/api/info
+- **Web Interface**: http://localhost:8001/osint
+- Swagger UI: http://localhost:8001/docs
+- ReDoc: http://localhost:8001/redoc
+- API Health: http://localhost:8001/api/health
 
 ---
 
 ## 📁 Структура проекта
 
 ```
-PeopleFinder/
+OSINT-2.0/
 ├── backend/
 │   ├── modules/
-│   │   ├── email_checker.py      # 🔥 НОВОЕ: Email OSINT (HIBP + Holehe)
-│   │   ├── username_checker.py   # 🔥 НОВОЕ: Username OSINT (Maigret)
-│   │   ├── photo_search.py       # 🔥 НОВОЕ: Photo OSINT (Yandex+Google+TinEye)
-│   │   ├── sherlock_search.py    # Legacy: старый поиск
-│   │   └── image_search.py       # Legacy: старый поиск фото
-│   ├── config.py
-│   ├── main.py                    # Старый API
-│   └── main_osint.py             # 🔥 НОВЫЙ: OSINT API v2.0
+│   │   ├── email_checker.py      # Email OSINT (HIBP + Holehe 100+ sites)
+│   │   ├── username_checker.py   # Username OSINT (Maigret 500+ platforms)
+│   │   ├── photo_search.py       # Photo OSINT (Yandex+Google+TinEye)
+│   │   ├── sherlock_search.py    # Legacy Sherlock integration
+│   │   └── image_search.py       # Additional image tools
+│   ├── config.py                 # Configuration
+│   └── main_osint.py             # FastAPI OSINT API v2.0
 ├── frontend/
-│   ├── js/app.js
-│   └── index.html
-├── requirements.txt               # 🔥 ОБНОВЛЕНО: OSINT библиотеки
-├── OSINT_API_DOCUMENTATION.md     # 🔥 НОВОЕ: Полная документация API
-└── OSINT_README.md                # Этот файл
+│   ├── js/
+│   │   ├── osint-panel.js        # Main OSINT panel logic
+│   │   └── app.js                # Legacy frontend
+│   ├── osint-panel.html          # Professional analytics UI
+│   └── index.html                # Legacy interface
+├── docs/                         # 11 documentation files
+│   ├── QUICKSTART.md
+│   ├── OSINT_API_DOCUMENTATION.md
+│   └── ...
+├── requirements.txt              # All OSINT dependencies
+└── README.md                     # This file
 ```
 
 ---
@@ -95,7 +104,7 @@ PeopleFinder/
 
 ```bash
 # Проверка email на утечки и регистрации
-curl -X POST http://localhost:8000/api/osint/email \
+curl -X POST http://localhost:8001/api/osint/email \
   -H "Content-Type: application/json" \
   -d '{
     "email": "test@gmail.com",
@@ -114,7 +123,7 @@ curl -X POST http://localhost:8000/api/osint/email \
 
 ```bash
 # Глубокий поиск username
-curl -X POST http://localhost:8000/api/osint/username \
+curl -X POST http://localhost:8001/api/osint/username \
   -H "Content-Type: application/json" \
   -d '{
     "username": "github",
@@ -133,7 +142,7 @@ curl -X POST http://localhost:8000/api/osint/username \
 
 ```bash
 # Reverse image search
-curl -X POST http://localhost:8000/api/osint/photo \
+curl -X POST http://localhost:8001/api/osint/photo \
   -F "file=@/path/to/photo.jpg"
 ```
 
@@ -152,7 +161,7 @@ curl -X POST http://localhost:8000/api/osint/photo \
 ```env
 # Server
 HOST=0.0.0.0
-PORT=8000
+PORT=8001
 DEBUG=True
 
 # Upload
@@ -212,7 +221,7 @@ emails = [
 
 for email in emails:
     result = requests.post(
-        "http://localhost:8000/api/osint/email",
+        "http://localhost:8001/api/osint/email",
         json={"email": email, "check_breaches": True}
     ).json()
 
@@ -226,7 +235,7 @@ for email in emails:
 ```python
 # Найти username на всех платформах
 result = requests.post(
-    "http://localhost:8000/api/osint/username",
+    "http://localhost:8001/api/osint/username",
     json={"username": "suspicious_user", "max_sites": 50}
 ).json()
 
@@ -240,7 +249,7 @@ print(f"Найдено на: {', '.join(platforms)}")
 ```python
 with open("suspicious_photo.jpg", "rb") as f:
     result = requests.post(
-        "http://localhost:8000/api/osint/photo",
+        "http://localhost:8001/api/osint/photo",
         files={"file": f}
     ).json()
 
@@ -287,11 +296,12 @@ pip install -r requirements.txt
 ### Проблема: "Address already in use"
 
 ```bash
-# Убить процесс на порту 8000
-lsof -ti:8000 | xargs kill -9
+# Убить процесс на порту 8001
+lsof -ti:8001 | xargs kill -9
 
 # Запустить снова
-python main_osint.py
+cd backend
+uvicorn main_osint:app --host 0.0.0.0 --port 8001
 ```
 
 ### Проблема: "cloudscraper not working"
@@ -356,8 +366,8 @@ HaveIBeenPwned ограничивает до 1 запроса в 1.5 секун�
 
 - [OSINT_API_DOCUMENTATION.md](OSINT_API_DOCUMENTATION.md) - Полная документация API
 - [PEOPLEFINDER_README.md](PEOPLEFINDER_README.md) - Оригинальная документация
-- Swagger UI: http://localhost:8000/docs
-- ReDoc: http://localhost:8000/redoc
+- Swagger UI: http://localhost:8001/docs
+- ReDoc: http://localhost:8001/redoc
 
 ---
 
@@ -382,5 +392,5 @@ MIT License
 ---
 
 **Version:** 2.0.0
-**Last Updated:** 2024-01-31
-**Author:** PeopleFinder Team
+**Last Updated:** 2026-02-03
+**Repository:** https://github.com/NameLucky2205/OSINT-2.0
