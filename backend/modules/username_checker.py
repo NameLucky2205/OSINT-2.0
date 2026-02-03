@@ -142,10 +142,6 @@ class UsernameChecker:
             Dict с результатами или None если maigret не работает
         """
         try:
-            # Создаем временный файл для вывода
-            with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as tf:
-                output_file = tf.name
-
             # Формируем команду maigret
             cmd = ['maigret', username, '--json', 'simple', '--timeout', '10']
 
@@ -161,31 +157,26 @@ class UsernameChecker:
                 timeout=120  # 2 минуты максимум
             )
 
-            # Парсим вывод maigret
-            if result.returncode == 0 or result.stdout:
-                # Maigret выводит JSON в stdout или stderr
-                output = result.stdout or result.stderr
+            # Maigret сохраняет результаты в файл reports/report_{username}_simple.json
+            # Путь относительно backend/ директории (там где запускается сервер)
+            report_file = Path(__file__).parent.parent / 'reports' / f'report_{username}_simple.json'
 
-                # Ищем JSON в выводе
+            if result.returncode == 0 and report_file.exists():
                 try:
-                    # Maigret может выводить дополнительный текст, находим JSON
-                    json_start = output.find('{')
-                    json_end = output.rfind('}') + 1
+                    # Читаем JSON из файла
+                    with open(report_file, 'r', encoding='utf-8') as f:
+                        maigret_results = json.load(f)
 
-                    if json_start >= 0 and json_end > json_start:
-                        json_data = output[json_start:json_end]
-                        maigret_results = json.loads(json_data)
+                    # Удаляем файл отчета после чтения
+                    try:
+                        report_file.unlink()
+                    except:
+                        pass
 
-                        # Конвертируем результаты maigret в наш формат
-                        return await self._convert_maigret_results(username, maigret_results)
-                except json.JSONDecodeError:
+                    # Конвертируем результаты maigret в наш формат
+                    return await self._convert_maigret_results(username, maigret_results)
+                except (json.JSONDecodeError, IOError):
                     pass
-
-            # Удаляем временный файл
-            try:
-                Path(output_file).unlink()
-            except:
-                pass
 
             return None
 
@@ -212,25 +203,28 @@ class UsernameChecker:
 
         # Maigret возвращает словарь с найденными сайтами
         for site_name, site_data in maigret_data.items():
-            if isinstance(site_data, dict) and site_data.get('status') == 'found':
-                result = {
-                    "platform": site_name,
-                    "url": site_data.get('url', ''),
-                    "status": "found",
-                    "confidence": 0.95,
-                    "http_status": site_data.get('http_status', 200),
-                    "tags": site_data.get('tags', [])
-                }
+            if isinstance(site_data, dict):
+                # Проверяем статус внутри объекта status
+                status_obj = site_data.get('status', {})
+                if isinstance(status_obj, dict) and status_obj.get('status') == 'Claimed':
+                    result = {
+                        "platform": site_name,
+                        "url": site_data.get('url_user', site_data.get('url', '')),
+                        "status": "found",
+                        "confidence": 0.95,
+                        "http_status": site_data.get('http_status', 200),
+                        "tags": status_obj.get('tags', site_data.get('site', {}).get('tags', []))
+                    }
 
-                # Добавляем метаданные если есть
-                if 'name' in site_data:
-                    result['full_name'] = site_data['name']
-                if 'avatar_url' in site_data:
-                    result['avatar_url'] = site_data['avatar_url']
-                if 'bio' in site_data or 'description' in site_data:
-                    result['bio'] = site_data.get('bio') or site_data.get('description')
+                    # Добавляем метаданные если есть
+                    if 'name' in site_data:
+                        result['full_name'] = site_data['name']
+                    if 'avatar_url' in site_data:
+                        result['avatar_url'] = site_data['avatar_url']
+                    if 'bio' in site_data or 'description' in site_data:
+                        result['bio'] = site_data.get('bio') or site_data.get('description')
 
-                results.append(result)
+                    results.append(result)
 
         # Категоризация результатов
         categorized = self._categorize_results(results)
